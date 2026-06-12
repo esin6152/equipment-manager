@@ -1572,6 +1572,27 @@ function renderTimelineCatTabs() {
   }).join('');
 }
 
+function showEqNameTooltip(e, name) {
+  e.stopPropagation();
+  let tip = document.getElementById('eq-name-tooltip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'eq-name-tooltip';
+    tip.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text);box-shadow:0 4px 16px rgba(0,0,0,0.4);max-width:80vw;word-break:break-all;';
+    tip.onclick = () => tip.style.display = 'none';
+    document.body.appendChild(tip);
+  }
+  tip.textContent = name;
+  tip.style.display = 'block';
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  const tipW = 260;
+  const left = Math.min(Math.max(x - tipW/2, 8), window.innerWidth - tipW - 8);
+  tip.style.left = left + 'px';
+  tip.style.top = (y - 14) + 'px';
+  setTimeout(() => { tip.style.display = 'none'; }, 3000);
+}
+
 function selectTimelineCat(cat) {
   timelineCat = cat;
   renderTimeline();
@@ -1620,7 +1641,7 @@ function renderTimeline() {
   let tbody = '<tbody>';
   filteredEqs.forEach(eq => {
     const eqFullName = `${eq.category} · ${eq.name}${eq.serial ? ' · ' + eq.serial : ''}`;
-    tbody += `<tr><td class="eq-name-cell" title="${eqFullName}"><span style="color:${getCatColor(eq.category)};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${eq.category} · ${eq.name}${eq.serial ? ' · ' + eq.serial : ''}</span></td>`;
+    tbody += `<tr><td class="eq-name-cell" title="${eqFullName}" onclick="showEqNameTooltip(event,'${eqFullName.replace(/'/g,'&#39;')}')"><span style="color:${getCatColor(eq.category)};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${eq.category} · ${eq.name}${eq.serial ? ' · ' + eq.serial : ''}</span></td>`;
     days.forEach(d => {
       const isToday = d.toDateString() === today.toDateString();
       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
