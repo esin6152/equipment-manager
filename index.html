@@ -157,6 +157,26 @@
   .timeline-nav button:hover { border-color: var(--accent); }
   .timeline-nav .month-label { font-size: 16px; font-weight: 700; min-width: 100px; text-align: center; }
   .timeline-scroll { overflow-x: auto; }
+
+  .timeline-header-scroll { overflow-x: hidden; margin-bottom: -1px; }
+  .timeline-header-scroll table { margin-bottom: 0; border-bottom: none; }
+  .timeline-header-scroll th { border-bottom: none !important; }
+  .timeline-sticky-header {
+    position: sticky;
+    top: 93px;
+    z-index: 6;
+    background: var(--surface);
+    padding: 10px 0 6px;
+    margin: -10px -20px 0;
+    padding-left: 20px;
+    padding-right: 20px;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 12px var(--bg);
+  }
+
+  .timeline-table th.eq-col {
+    z-index: 5 !important;
+  }
   .timeline-table { border-collapse: collapse; min-width: 100%; }
   .timeline-table th {
     font-size: 11px; color: var(--gray); font-weight: 500;
@@ -164,22 +184,38 @@
     border-bottom: 1px solid var(--border); min-width: 28px;
   }
   .timeline-table th.today-col { color: var(--accent); font-weight: 700; }
-  .timeline-table th.eq-col { text-align: left; padding-left: 12px; min-width: 160px; font-size: 12px; }
+  .timeline-table th.eq-col { text-align: left; padding-left: 12px; min-width: 240px; max-width: 240px; font-size: 12px; }
   .timeline-table td { padding: 3px 2px; }
   .timeline-table td.eq-name-cell {
-    padding: 6px 12px; font-size: 13px; white-space: nowrap;
+    padding: 6px 8px; font-size: 12px; white-space: nowrap;
     border-right: 1px solid var(--border);
+    min-width: 240px; max-width: 240px; overflow: hidden; text-overflow: ellipsis;
   }
   .timeline-table th.eq-col {
     background: var(--surface);
   }
-  @media (min-width: 768px) {
+  /* 장비명 컬럼 항상 sticky */
+  .timeline-table td.eq-name-cell {
+    position: sticky; left: 0; z-index: 2;
+    background: var(--surface);
+  }
+  .timeline-table th.eq-col {
+    position: sticky; left: 0; z-index: 5;
+    background: var(--surface);
+  }
+  @media (max-width: 767px) {
     .timeline-table td.eq-name-cell {
-      position: sticky; left: 0; z-index: 2;
-      background: var(--surface);
+      font-size: 11px; padding: 4px 6px;
+      min-width: 90px; max-width: 90px; width: 90px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .timeline-table td.eq-name-cell > * {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 90px; display: block;
     }
     .timeline-table th.eq-col {
-      position: sticky; left: 0; z-index: 3;
+      min-width: 90px; max-width: 90px; width: 90px;
+      font-size: 10px; padding-left: 6px;
     }
   }
   .eq-name-cell .eq-ver { font-size: 10px; color: var(--gray); }
@@ -210,9 +246,10 @@
     display: inline-block; font-size: 11px; font-weight: 600;
     padding: 3px 9px; border-radius: 12px;
   }
-  .type-use { background: rgba(79,124,255,0.15); color: var(--accent); }
-  .type-repair { background: rgba(255,92,92,0.15); color: var(--red); }
-  .type-check { background: rgba(124,92,255,0.15); color: var(--accent2); }
+  .type-check   { background: rgba(46,204,138,0.15); color: #2ecc8a; }
+  .type-repair  { background: rgba(245,200,66,0.15);  color: #f5c842; }
+  .type-discard { background: rgba(224,85,85,0.15);   color: #e05555; }
+  .type-use     { background: rgba(79,124,255,0.15);  color: var(--accent); }
 
   /* MODAL */
   .modal-overlay {
@@ -549,20 +586,23 @@
     <!-- 가로 타임라인 -->
     <div id="timeline-grid-view">
       <div class="section-card">
-        <div class="timeline-nav">
-          <button onclick="changeMonth(-1)">◀</button>
-          <div class="month-label" id="month-label"></div>
-          <button onclick="changeMonth(1)">▶</button>
-          <button id="avail-toggle" onclick="toggleAvailView()" style="margin-left:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.2s">📅 사용 가능일 보기</button>
+        <div class="timeline-sticky-header">
+          <div class="timeline-nav" style="margin-bottom:8px">
+            <button onclick="changeMonth(-1)">◀</button>
+            <div class="month-label" id="month-label"></div>
+            <button onclick="changeMonth(1)">▶</button>
+            <button id="avail-toggle" onclick="toggleAvailView()" style="margin-left:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.2s">📅 사용 가능일 보기</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--gray);align-items:center" id="timeline-legend">
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(245,200,66,0.25);border-radius:2px;margin-right:4px"></span>사용중</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(79,124,255,0.2);border-radius:2px;margin-right:4px"></span>예약</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:repeating-linear-gradient(45deg,rgba(255,92,92,0.4),rgba(255,92,92,0.4) 3px,rgba(245,200,66,0.4) 3px,rgba(245,200,66,0.4) 6px);border-radius:2px;margin-right:4px"></span>⚠️ 겹침</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(255,92,92,0.2);border-radius:2px;margin-right:4px"></span>수리중</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(46,204,138,0.08);border-radius:2px;margin-right:4px"></span>대기중</span>
+          </div>
+          <div class="timeline-header-scroll" id="timeline-header-wrap" style="margin-top:6px"></div>
         </div>
-        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--gray);align-items:center" id="timeline-legend">
-          <span><span style="display:inline-block;width:12px;height:12px;background:rgba(245,200,66,0.25);border-radius:2px;margin-right:4px"></span>사용중</span>
-          <span><span style="display:inline-block;width:12px;height:12px;background:rgba(79,124,255,0.2);border-radius:2px;margin-right:4px"></span>예약</span>
-          <span><span style="display:inline-block;width:12px;height:12px;background:repeating-linear-gradient(45deg,rgba(255,92,92,0.4),rgba(255,92,92,0.4) 3px,rgba(245,200,66,0.4) 3px,rgba(245,200,66,0.4) 6px);border-radius:2px;margin-right:4px"></span>⚠️ 겹침</span>
-          <span><span style="display:inline-block;width:12px;height:12px;background:rgba(255,92,92,0.2);border-radius:2px;margin-right:4px"></span>수리중</span>
-          <span><span style="display:inline-block;width:12px;height:12px;background:rgba(46,204,138,0.08);border-radius:2px;margin-right:4px"></span>대기중</span>
-        </div>
-        <div class="timeline-scroll" style="margin-top:8px">
+        <div class="timeline-scroll" id="timeline-body-scroll" style="margin-top:0">
           <div id="timeline-table-wrap"><table class="timeline-table" id="timeline-table"></table></div>
         </div>
       </div>
@@ -588,6 +628,15 @@
       <div class="section-title">
         점검 · 수리 이력
         <button class="add-btn" onclick="openAddHistory()">+ 이력 추가</button>
+      </div>
+      <div style="margin-bottom:6px">
+        <div class="cat-tabs" id="hist-cat-filter-wrap" style="margin-bottom:4px"></div>
+        <div class="filter-bar">
+          <button id="hfbtn-check"   onclick="toggleHistTypeFilter('check')"   class="status-filter-btn">🟢 점검</button>
+          <button id="hfbtn-repair"  onclick="toggleHistTypeFilter('repair')"  class="status-filter-btn">🟡 수리</button>
+          <button id="hfbtn-discard" onclick="toggleHistTypeFilter('discard')" class="status-filter-btn">🔴 폐기(해체)</button>
+          <button onclick="resetHistFilters()" class="filter-reset">초기화</button>
+        </div>
       </div>
     </div>
     <div id="history-list"></div>
@@ -643,9 +692,9 @@
     <div class="form-group">
       <label>현재 상태</label>
       <select id="eq-status">
-        <option value="available">대기중</option>
-        <option value="in-use">사용중</option>
-        <option value="maintenance">수리중</option>
+        <option value="available" style="color:#2ecc8a">대기중</option>
+        <option value="in-use" style="color:#f5c842">사용중</option>
+        <option value="maintenance" style="color:#e05555">수리중</option>
       </select>
     </div>
     <div class="form-group">
@@ -696,16 +745,24 @@
   <div class="modal">
     <h3 id="hist-modal-title">이력 추가</h3>
     <div class="form-group">
-      <label>장비 선택</label>
-      <select id="hist-eq"></select>
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        장비 선택
+        <span id="hist-eq-toggle" onclick="toggleHistEqInput()" style="font-size:11px;color:var(--accent);cursor:pointer;font-weight:500">✏️ 직접 입력</span>
+      </label>
+      <select id="hist-eq" style="width:100%"></select>
+      <div id="hist-eq-manual" style="display:none;margin-top:6px;display:none;flex-direction:column;gap:6px">
+        <select id="hist-eq-cat" style="width:100%;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none"></select>
+        <input type="text" id="hist-eq-name" placeholder="장비명 (예: 내부용(해외1))" style="width:100%;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none">
+        <input type="text" id="hist-eq-serial" placeholder="일련번호 (예: 10010)" style="width:100%;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none">
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>구분</label>
         <select id="hist-type">
-          <option value="check">정기점검</option>
+          <option value="check">점검</option>
           <option value="repair">수리</option>
-          <option value="use">사용이력</option>
+          <option value="discard">폐기(해체)</option>
         </select>
       </div>
       <div class="form-group">
@@ -999,6 +1056,7 @@ function switchTab(tab) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (tab === 'timeline') renderTimeline();
   if (tab === 'history') renderHistory();
+  setTimeout(updateStickyFilterTop, 50);
 }
 
 // ── 통계 업데이트 ─────────────────────────────────
@@ -1073,8 +1131,12 @@ function filterByStat(cat, status) {
 }
 
 function toggleStatusFilter(status) {
-  if (activeStatusFilters.has(status)) activeStatusFilters.delete(status);
-  else activeStatusFilters.add(status);
+  if (activeStatusFilters.has(status)) {
+    activeStatusFilters.clear();
+  } else {
+    activeStatusFilters.clear();
+    activeStatusFilters.add(status);
+  }
   ['available','in-use','maintenance'].forEach(s => {
     const btn = document.getElementById(`fbtn-${s}`);
     if (btn) btn.classList.toggle('active', activeStatusFilters.has(s));
@@ -1305,7 +1367,10 @@ function renderDashboard(list) {
     const returnBtn = eq.status === 'in-use'
       ? `<button onclick="returnEquipment(${eq.id})" style="display:block;width:100%;margin-top:10px;padding:9px;font-size:13px;font-weight:600;background:rgba(255,92,92,0.12);color:#ff5c5c;border:1px solid rgba(255,92,92,0.3);border-radius:8px;cursor:pointer">↩ 반납</button>`
       : eq.status === 'maintenance'
-      ? `<button onclick="completeInspection(${eq.id})" style="display:block;width:100%;margin-top:10px;padding:9px;font-size:13px;font-weight:600;background:rgba(255,124,92,0.12);color:#ff7c5c;border:1px solid rgba(255,124,92,0.3);border-radius:8px;cursor:pointer">🔧 대기중으로 변경하기</button>`
+      ? `<div style="display:flex;gap:6px;margin-top:10px">
+          <button onclick="completeInspection(${eq.id})" style="flex:1;padding:9px;font-size:12px;font-weight:600;background:rgba(255,124,92,0.12);color:#ff7c5c;border:1px solid rgba(255,124,92,0.3);border-radius:8px;cursor:pointer">✅ 대기중으로 변경</button>
+          <button onclick="discardEquipment(${eq.id})" style="flex:1;padding:9px;font-size:12px;font-weight:600;background:rgba(150,50,50,0.15);color:#e05555;border:1px solid rgba(200,50,50,0.35);border-radius:8px;cursor:pointer">🗑 폐기하기(해체)</button>
+        </div>`
       : '';
 
     return `
@@ -1492,7 +1557,7 @@ let timelineMonth = new Date().getMonth();
 let timelineCat = '전체';
 
 function renderTimelineCatTabs() {
-  const cats = ['전체', ...new Set(equipments.map(e => e.category).filter(Boolean))].sort((a,b) => a === '전체' ? -1 : b === '전체' ? 1 : a.localeCompare(b));
+  const cats = ['전체', ...getAllCategories()];
   if (timelineCat !== '전체' && !cats.includes(timelineCat)) timelineCat = '전체';
   document.getElementById('timeline-cat-tabs').innerHTML = cats.map(cat => {
     const count = cat === '전체' ? equipments.length : equipments.filter(e => e.category === cat).length;
@@ -1521,6 +1586,7 @@ function changeMonth(delta) {
 
 function renderTimeline() {
   renderTimelineCatTabs();
+  setTimeout(updateStickyFilterTop, 50);
   if (timelineView === 'cal') {
     renderCalendar();
     return;
@@ -1553,7 +1619,8 @@ function renderTimeline() {
   // 바디
   let tbody = '<tbody>';
   filteredEqs.forEach(eq => {
-    tbody += `<tr><td class="eq-name-cell"><span style="color:${getCatColor(eq.category)};font-weight:600">${eq.category}</span> · ${eq.name}${eq.serial ? ' · ' + eq.serial : ''}</td>`;
+    const eqFullName = `${eq.category} · ${eq.name}${eq.serial ? ' · ' + eq.serial : ''}`;
+    tbody += `<tr><td class="eq-name-cell" title="${eqFullName}"><span style="color:${getCatColor(eq.category)};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${eq.category} · ${eq.name}${eq.serial ? ' · ' + eq.serial : ''}</span></td>`;
     days.forEach(d => {
       const isToday = d.toDateString() === today.toDateString();
       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
@@ -1649,21 +1716,111 @@ function renderTimeline() {
   });
   tbody += '</tbody>';
 
-  document.getElementById('timeline-table-wrap').innerHTML = `<table class="timeline-table" id="timeline-table">${thead + tbody}</table>`;
+  // 날짜 헤더 테이블 (sticky-header 안에 고정)
+  document.getElementById('timeline-header-wrap').innerHTML =
+    `<table class="timeline-table" style="table-layout:fixed">${thead}</table>`;
+  // 바디 테이블 (tbody만)
+  document.getElementById('timeline-table-wrap').innerHTML =
+    `<table class="timeline-table" id="timeline-table" style="table-layout:fixed">${tbody}</table>`;
+  // 가로 스크롤 동기화
+  const bodyScroll = document.getElementById('timeline-body-scroll');
+  const headerWrap = document.getElementById('timeline-header-wrap');
+  if (bodyScroll && headerWrap) {
+    bodyScroll.removeEventListener('scroll', bodyScroll._syncScroll || (() => {}));
+    bodyScroll._syncScroll = () => { headerWrap.scrollLeft = bodyScroll.scrollLeft; };
+    bodyScroll.addEventListener('scroll', bodyScroll._syncScroll);
+  }
 }
 
 // ── 이력 렌더 ─────────────────────────────────────
+let activeHistTypeFilters = new Set();
+let activeHistCatFilter = '';
+
+function toggleHistTypeFilter(type) {
+  if (activeHistTypeFilters.has(type)) {
+    activeHistTypeFilters.clear();
+  } else {
+    activeHistTypeFilters.clear();
+    activeHistTypeFilters.add(type);
+  }
+  ['check','repair','discard'].forEach(t => {
+    const btn = document.getElementById('hfbtn-' + t);
+    if (btn) btn.classList.toggle('active', activeHistTypeFilters.has(t));
+  });
+  renderHistory();
+}
+
+function resetHistFilters() {
+  activeHistTypeFilters.clear();
+  activeHistCatFilter = '';
+  ['check','repair','discard'].forEach(t => {
+    const btn = document.getElementById('hfbtn-' + t);
+    if (btn) btn.classList.remove('active');
+  });
+  renderHistCatFilter();
+  renderHistory();
+}
+
+function renderHistCatFilter() {
+  const wrap = document.getElementById('hist-cat-filter-wrap');
+  if (!wrap) return;
+  const cats = getAllCategories();
+  // 전체 카운트
+  const totalCount = histories.length;
+  const allActive = activeHistCatFilter === '';
+  wrap.innerHTML = `<div class="cat-tab ${allActive ? 'active' : ''}" onclick="setHistCatFilter('')">전체<span class="cat-count">${totalCount}</span></div>`
+    + cats.map(c => {
+    const color = getCatColor(c);
+    const isActive = activeHistCatFilter === c;
+    const style = isActive ? `background:${color};border-color:${color};color:#fff` : `border-color:${color};color:${color}`;
+    const count = histories.filter(h => {
+      const eq = equipments.find(e => e.id === h.eqId);
+      const cat = eq ? eq.category : (h.eqName ? h.eqName.split(' · ')[0] : '');
+      return cat === c;
+    }).length;
+    return `<div class="cat-tab" id="hfbtn-cat-${c.replace(/ /g,'_')}" style="${style}" onclick="setHistCatFilter('${c}')">${c}<span class="cat-count">${count}</span></div>`;
+  }).join('');
+  // 현재 선택된 카테고리 활성화
+  if (activeHistCatFilter) {
+    const btn = document.getElementById('hfbtn-cat-' + activeHistCatFilter.replace(/ /g,'_'));
+    if (btn) btn.classList.add('active');
+  }
+}
+
+function setHistCatFilter(cat) {
+  activeHistCatFilter = activeHistCatFilter === cat ? '' : cat;
+  renderHistCatFilter();
+  renderHistory();
+}
+
 function renderHistory() {
+  renderHistCatFilter();
   const container = document.getElementById('history-list');
   if (!histories.length) {
     container.innerHTML = '<div class="empty-state">이력이 없습니다</div>';
     return;
   }
   const sorted = [...histories].sort((a,b) => b.date.localeCompare(a.date));
-  container.innerHTML = sorted.map(h => {
+  const filtered = sorted.filter(h => {
+    if (activeHistTypeFilters.size > 0 && !activeHistTypeFilters.has(h.type)) return false;
+    if (activeHistCatFilter) {
+      const eq = equipments.find(e => e.id === h.eqId);
+      const cat = eq ? eq.category : (h.eqName ? h.eqName.split(' · ')[0] : '');
+      if (cat !== activeHistCatFilter) return false;
+    }
+    return true;
+  });
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty-state">해당 조건의 이력이 없습니다</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(h => {
     const eq = equipments.find(e => e.id === h.eqId);
-    const typeLabel = { check: '정기점검', repair: '수리', use: '사용이력' }[h.type];
-    const catColor = eq ? getCatColor(eq.category) : 'var(--gray)';
+    const eqLabel = eq ? `${eq.category ? eq.category + ' · ' : ''}${eq.name} · ${eq.serial}` : (h.eqName || '알 수 없는 장비');
+    const typeLabel = { check: '점검', repair: '수리', discard: '폐기(해체)' }[h.type];
+    // 폐기된 장비는 eqName에서 카테고리 추출해 색상 적용
+    const discardCat = !eq && h.eqName ? h.eqName.split(' · ')[0] : null;
+    const catColor = eq ? getCatColor(eq.category) : (discardCat ? getCatColor(discardCat) : 'var(--gray)');
     return `<div class="section-card" style="margin-bottom:10px;padding:16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1679,8 +1836,11 @@ function renderHistory() {
         </div>
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:6px">
-        <span style="color:${catColor};font-weight:600">${eq ? eq.category : '-'}</span>
-        ${eq ? ` · <span style="color:var(--text)">${eq.name}</span>${eq.serial ? ' · ' + eq.serial : ''}` : ''}
+        ${eq
+          ? `<span style="color:${catColor};font-weight:600">${eq.category}</span> · <span style="color:var(--text)">${eq.name}</span>${eq.serial ? ' · ' + eq.serial : ''}`
+          : h.eqName
+            ? (() => { const parts = h.eqName.split(' · '); return `<span style="color:${catColor};font-weight:600">${parts[0]}</span>${parts.slice(1).map(p => ` · <span style="color:var(--text2)">${p}</span>`).join('')}`; })()
+            : `<span style="color:var(--gray)">알 수 없는 장비</span>`}
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${h.content}</div>
     </div>`;
@@ -1796,7 +1956,7 @@ function refreshCatSelectOptions() {
   if (!sel) return;
   const cur = sel.value;
   sel.innerHTML = '<option value="">-- 품목 선택 --</option>'
-    + cats.map(c => `<option value="${c}"${c === cur ? ' selected' : ''}>${c}</option>`).join('');
+    + cats.map(c => `<option value="${c}"${c === cur ? ' selected' : ''} style="color:${getCatColor(c)}">${c}</option>`).join('');
 }
 
 // SIRIUS V2 여부 확인 및 장착 선택 옵션 갱신
@@ -1814,7 +1974,7 @@ function refreshMountField(selectedCat, selectedId) {
     const sel = document.getElementById('eq-mounted-on');
     const cur = sel.value;
     sel.innerHTML = '<option value="">-- 미장착 --</option>'
-      + targets.map(e => `<option value="${e.id}"${e.id == cur ? ' selected' : ''}>${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' (' + e.serial + ')' : ''}</option>`).join('');
+      + targets.map(e => `<option value="${e.id}"${e.id == cur ? ' selected' : ''}>${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' (' + e.serial + ')' : ''}</option>`).join(''); sel.querySelectorAll('option').forEach(opt => { const eq = targets.find(e => e.id == opt.value); if(eq) opt.style.color = getCatColor(eq.category); });
   }
 
   document.getElementById('module-field').style.display = isHost ? 'block' : 'none';
@@ -1825,7 +1985,7 @@ function refreshMountField(selectedCat, selectedId) {
     const attachedModule = selectedId ? equipments.find(e => isModuleCategory(e.category) && e.mountedOn === selectedId) : null;
     const cur = attachedModule ? attachedModule.id : (sel.value || '');
     sel.innerHTML = '<option value="">-- 없음 --</option>'
-      + modules.map(e => `<option value="${e.id}"${e.id == cur ? ' selected' : ''}>${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
+      + modules.map(e => `<option value="${e.id}"${e.id == cur ? ' selected' : ''}>${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join(''); sel.querySelectorAll('option').forEach(opt => { const eq = modules.find(e => e.id == opt.value); if(eq) opt.style.color = getCatColor(eq.category); });
   }
 }
 
@@ -1973,7 +2133,7 @@ function openDetail(id) {
     ${eqHistories.length ? `
     <div style="font-size:12px;color:var(--gray);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">최근 이력</div>
     ${eqHistories.slice(0,3).map(h => {
-      const typeLabel = { check: '정기점검', repair: '수리', use: '사용이력' }[h.type];
+      const typeLabel = { check: '점검', repair: '수리', discard: '폐기(해체)' }[h.type];
       return `<div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:6px;font-size:13px">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px">
           <span class="type-badge type-${h.type}">${typeLabel}</span>
@@ -2002,11 +2162,39 @@ function deleteEquipment(id) {
 // ── 이력 추가/편집 모달 ────────────────────────────────
 let editingHistId = null;
 
+function toggleHistEqInput() {
+  const sel = document.getElementById('hist-eq');
+  const manual = document.getElementById('hist-eq-manual');
+  const toggle = document.getElementById('hist-eq-toggle');
+  const isManual = manual.style.display === 'flex';
+  if (isManual) {
+    manual.style.display = 'none';
+    sel.style.display = 'block';
+    toggle.textContent = '✏️ 직접 입력';
+  } else {
+    manual.style.display = 'flex';
+    sel.style.display = 'none';
+    toggle.textContent = '📋 목록에서 선택';
+    // 품목 드롭다운 채우기
+    const catSel = document.getElementById('hist-eq-cat');
+    catSel.innerHTML = '<option value="">-- 품목 선택 --</option>'
+      + getAllCategories().map(c => `<option value="${c}" style="color:${getCatColor(c)}">${c}</option>`).join('');
+    catSel.value = '';
+    document.getElementById('hist-eq-name').value = '';
+    document.getElementById('hist-eq-serial').value = '';
+    catSel.focus();
+  }
+}
+
 function openAddHistory() {
   editingHistId = null;
   document.getElementById('hist-modal-title').textContent = '이력 추가';
+  document.getElementById('hist-eq-manual').style.display = 'none';
+  document.getElementById('hist-eq').style.display = 'block';
+  document.getElementById('hist-eq-toggle').textContent = '✏️ 직접 입력';
+  ['hist-eq-cat','hist-eq-name','hist-eq-serial'].forEach(id => document.getElementById(id).value = '');
   const sel = document.getElementById('hist-eq');
-  sel.innerHTML = equipments.map(e => `<option value="${e.id}">${e.name} ${e.version}</option>`).join('');
+  sel.innerHTML = equipments.map(e => `<option value="${e.id}" style="color:${getCatColor(e.category)}">${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
   document.getElementById('hist-type').value = 'check';
   document.getElementById('hist-date').value = localDateStr(new Date());
   document.getElementById('hist-content').value = '';
@@ -2019,18 +2207,51 @@ function openEditHistory(id) {
   if (!h) return;
   editingHistId = id;
   document.getElementById('hist-modal-title').textContent = '이력 편집';
+
+  const eqExists = equipments.find(e => e.id === h.eqId);
   const sel = document.getElementById('hist-eq');
-  sel.innerHTML = equipments.map(e => `<option value="${e.id}"${e.id === h.eqId ? ' selected' : ''}>${e.name} ${e.version}</option>`).join('');
+  const manual = document.getElementById('hist-eq-manual');
+  const toggle = document.getElementById('hist-eq-toggle');
+
+  // 장비가 삭제됐거나 eqName만 있으면 직접입력 모드로
+  if (!eqExists && h.eqName) {
+    sel.style.display = 'none';
+    manual.style.display = 'flex';
+    toggle.textContent = '📋 목록에서 선택';
+    // 품목 드롭다운 채우기
+    const catSel = document.getElementById('hist-eq-cat');
+    catSel.innerHTML = '<option value="">-- 품목 선택 --</option>'
+      + getAllCategories().map(c => `<option value="${c}" style="color:${getCatColor(c)}">${c}</option>`).join('');
+    // eqName에서 품목/장비명/일련번호 분리
+    const parts = h.eqName.split(' · ');
+    catSel.value = parts[0] || '';
+    document.getElementById('hist-eq-name').value = parts[1] || '';
+    document.getElementById('hist-eq-serial').value = parts[2] || '';
+  } else {
+    sel.style.display = 'block';
+    manual.style.display = 'none';
+    toggle.textContent = '✏️ 직접 입력';
+    sel.innerHTML = equipments.map(e => `<option value="${e.id}"${e.id === h.eqId ? ' selected' : ''} style="color:${getCatColor(e.category)}">${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
+  }
+
   document.getElementById('hist-type').value = h.type;
   document.getElementById('hist-date').value = h.date;
   document.getElementById('hist-content').value = h.content;
-  document.getElementById('hist-person').value = h.person;
+  document.getElementById('hist-person').value = h.person || '';
   document.getElementById('modal-history').classList.add('open');
 }
 
 function saveHistory() {
+  const isManual = document.getElementById('hist-eq-manual').style.display === 'flex';
+  const eqIdVal = isManual ? null : parseInt(document.getElementById('hist-eq').value);
+  const eqCat = isManual ? document.getElementById('hist-eq-cat').value.trim() : '';
+  const eqName = isManual ? document.getElementById('hist-eq-name').value.trim() : '';
+  const eqSerial = isManual ? document.getElementById('hist-eq-serial').value.trim() : '';
+  const eqNameVal = isManual ? [eqCat, eqName, eqSerial].filter(Boolean).join(' · ') : '';
+  if (isManual && !eqName) { alert('장비명을 입력해주세요'); return; }
   const data = {
-    eqId: parseInt(document.getElementById('hist-eq').value),
+    eqId: eqIdVal || null,
+    eqName: eqNameVal,
     type: document.getElementById('hist-type').value,
     date: document.getElementById('hist-date').value,
     content: document.getElementById('hist-content').value.trim(),
@@ -2081,7 +2302,7 @@ function openReserveFromCal(dateStr) {
   const eqSel = document.getElementById('res-eq-select');
   wrap.style.display = 'block';
   eqSel.innerHTML = '<option value="">-- 장비 선택 --</option>'
-    + equipments.map(e => `<option value="${e.id}">${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
+    + equipments.map(e => `<option value="${e.id}" style="color:${getCatColor(e.category)}">${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
   eqSel.onchange = () => { reservingEqId = parseInt(eqSel.value) || null; };
   document.getElementById('modal-reserve').classList.add('open');
 }
@@ -2210,6 +2431,77 @@ function directRent(resId) {
   });
 }
 
+
+function discardEquipment(eqId) {
+  const eq = equipments.find(e => e.id === eqId);
+  document.getElementById('confirm-title').textContent = '🗑 폐기(해체) 처리';
+  document.getElementById('confirm-msg').textContent =
+    `${eq.category} · ${eq.name} (${eq.serial})
+장비를 폐기(해체) 처리합니다.
+
+장비 목록에서 삭제되며 복구할 수 없습니다.
+폐기 이력을 기록하시겠습니까?`;
+
+  const okBtn = document.getElementById('confirm-ok-btn');
+  const transferBtn = document.getElementById('confirm-transfer-btn');
+
+  okBtn.textContent = '이력 없이 폐기';
+  okBtn.onclick = () => { closeModal('modal-confirm'); doDiscardEquipment(eqId, false); };
+
+  transferBtn.style.display = 'block';
+  transferBtn.textContent = '📋 이력 기록 후 폐기';
+  transferBtn.onclick = () => { closeModal('modal-confirm'); openDiscardHistory(eqId); };
+
+  document.getElementById('modal-confirm').classList.add('open');
+}
+
+function doDiscardEquipment(eqId, withHistory, histData) {
+  const eq = equipments.find(e => e.id === eqId);
+  if (withHistory && histData) {
+    histories.push({ id: nextHistId++, eqId, eqName: `${eq.category} · ${eq.name} · ${eq.serial}`, type: 'discard', date: histData.date, content: histData.content, person: histData.person });
+    saveToSheets('histories', histories[histories.length - 1]);
+  }
+  deleteFromSheets('equipments', eqId);
+  equipments = equipments.filter(e => e.id !== eqId);
+  renderDashboard();
+  renderHistory();
+}
+
+function openDiscardHistory(eqId) {
+  const eq = equipments.find(e => e.id === eqId);
+  editingHistId = null;
+  document.getElementById('hist-modal-title').textContent = `폐기 이력 기록 — ${eq.name}`;
+  const sel = document.getElementById('hist-eq');
+  sel.innerHTML = equipments.map(e => `<option value="${e.id}"${e.id === eqId ? ' selected' : ''} style="color:${getCatColor(e.category)}">${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
+  sel.value = eqId;
+  sel.disabled = true;
+  document.getElementById('hist-eq-manual').style.display = 'none';
+  document.getElementById('hist-eq-toggle').style.display = 'none';
+  document.getElementById('hist-type').value = 'discard';
+  document.getElementById('hist-date').value = localDateStr(new Date());
+  document.getElementById('hist-content').value = eq.memo || '';
+  document.getElementById('hist-person').value = '';
+
+  const saveBtn = document.querySelector('#modal-history .btn-primary');
+  saveBtn.textContent = '기록 후 폐기';
+  saveBtn.onclick = () => {
+    const content = document.getElementById('hist-content').value.trim();
+    if (!content) { alert('내용을 입력해주세요'); return; }
+    const histData = {
+      type: 'discard',
+      date: document.getElementById('hist-date').value,
+      content,
+      person: document.getElementById('hist-person').value.trim(),
+    };
+    sel.disabled = false;
+    document.getElementById('hist-eq-toggle').style.display = '';
+    saveBtn.textContent = '저장';
+    saveBtn.onclick = saveHistory;
+    closeModal('modal-history');
+    doDiscardEquipment(eqId, true, histData);
+  };
+  document.getElementById('modal-history').classList.add('open');
+}
 
 function completeInspection(eqId) {
   const eq = equipments.find(e => e.id === eqId);
@@ -2351,6 +2643,14 @@ function updateStickyFilterTop() {
   document.querySelectorAll('.dashboard-sticky-filter, .timeline-sticky-filter, .history-sticky-filter').forEach(el => {
     el.style.top = topVal;
   });
+  // 타임라인 내부 네비+범례도 sticky filter 바로 아래에 고정
+  const timelineFilter = document.querySelector('.timeline-sticky-filter');
+  const timelineFilterH = timelineFilter ? timelineFilter.getBoundingClientRect().height : 0;
+  const timelineHeaderTop = (tabsH + headerH + timelineFilterH);
+  document.querySelectorAll('.timeline-sticky-header').forEach(el => {
+    el.style.top = timelineHeaderTop + 'px';
+  });
+
 }
 updateStickyFilterTop();
 window.addEventListener('resize', updateStickyFilterTop);
