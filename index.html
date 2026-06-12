@@ -1598,8 +1598,9 @@ function renderTimeline() {
           cls += ' maint'; // 어두운 색
         } else {
           cls = cls.replace('day-cell', 'day-cell free');
-          // 더 진한 초록으로
-          tbody += `<td><div class="${cls}" style="background:rgba(46,204,138,0.25);border-color:rgba(46,204,138,0.5)"></div></td>`;
+          // 더 진한 초록으로 + 클릭 시 예약 팝업
+          const freePopup = encodeURIComponent(JSON.stringify({ type: 'free', eqId: eq.id, eqName: eq.name, category: eq.category }));
+          tbody += `<td><div class="${cls}" style="background:rgba(46,204,138,0.25);border-color:rgba(46,204,138,0.5);cursor:pointer" data-popup="${freePopup}" onclick="showCellPopup(this)"></div></td>`;
           return;
         }
       }
