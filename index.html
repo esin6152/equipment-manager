@@ -1820,7 +1820,9 @@ function refreshMountField(selectedCat, selectedId) {
   if (isHost) {
     const modules = equipments.filter(e => isModuleCategory(e.category) && e.id !== selectedId);
     const sel = document.getElementById('eq-module-on');
-    const cur = sel.value;
+    // 현재 이 장비에 장착된 모듈 id를 실제 데이터에서 찾아서 기본값으로 사용
+    const attachedModule = selectedId ? equipments.find(e => isModuleCategory(e.category) && e.mountedOn === selectedId) : null;
+    const cur = attachedModule ? attachedModule.id : (sel.value || '');
     sel.innerHTML = '<option value="">-- 없음 --</option>'
       + modules.map(e => `<option value="${e.id}"${e.id == cur ? ' selected' : ''}>${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
   }
@@ -1864,8 +1866,6 @@ function openEditEquipment(id) {
   document.getElementById('eq-memo').value = eq.memo || '';
   refreshMountField(eq.category, eq.id);
   document.getElementById('eq-mounted-on').value = eq.mountedOn || '';
-  const attachedV2 = equipments.find(e => e.category === 'SIRIUS V2' && e.mountedOn === eq.id);
-  document.getElementById('eq-module-on').value = attachedV2 ? attachedV2.id : '';
   document.getElementById('eq-category').onchange = () => refreshMountField(document.getElementById('eq-category').value, eq.id);
   closeModal('modal-detail');
   document.getElementById('modal-equipment').classList.add('open');
