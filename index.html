@@ -21,6 +21,59 @@
     --text: #e8eaf6;
     --text2: #b0b3c8;
   }
+  /* 라이트 모드 전용 스타일 */
+  /* 탭바 - 차콜 */
+  [data-theme="light"] .tabs { background: #f5f6fc; border-color: #ced2e8; }
+  [data-theme="light"] .tab { color: #7b7f98; }
+  [data-theme="light"] .tab.active { color: #3a6aff; border-bottom-color: #3a6aff; }
+  [data-theme="light"] #theme-toggle { border-color: #ced2e8; color: #7b7f98; }
+  [data-theme="light"] .tabs img { filter: brightness(0) invert(0) saturate(0) brightness(0.25); }
+
+
+  /* 헤더/상태배너 */
+  [data-theme="light"] header { background: #f5f6fc; border-color: #ced2e8; }
+
+  /* 카드 - 배경과 같은 흰색 계열, 완전 불투명 */
+  [data-theme="light"] .equipment-card { background: #f5f6fc; border-color: #ced2e8; }
+  [data-theme="light"] .equipment-card.available { border-color: #1aaa6a; background: #f5f6fc; }
+  [data-theme="light"] .equipment-card.in-use { border-color: #c49010; background: #f5f6fc; }
+  [data-theme="light"] .equipment-card.maintenance { border-color: #e03030; background: #f5f6fc; }
+  [data-theme="light"] .card-grid { background: #eef0f7; }
+
+  /* 필터 버튼 - 상태필터와 동일 스타일 */
+  [data-theme="light"] .status-filter-btn { background: #eef0f7; color: #404460; border-color: #ced2e8; }
+  [data-theme="light"] .status-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  [data-theme="light"] .cat-tab { background: #eef0f7; color: #404460; border-color: #ced2e8; }
+  [data-theme="light"] .cat-tab.active { color: #fff; }
+  [data-theme="light"] .filter-reset { background: #eef0f7; color: #404460; border-color: #ced2e8; }
+  [data-theme="light"] .filter-input { background: #eef0f7; color: #404460; border-color: #ced2e8; }
+  [data-theme="light"] .chk-dropdown { background: #ffffff; border-color: #ced2e8; }
+  [data-theme="light"] .chk-dropdown label { color: #1a1d2e; }
+
+  /* 일정뷰 - 이전 배경색 복구 */
+  [data-theme="light"] .timeline-scroll { background: #eef0f7; }
+  [data-theme="light"] .timeline-table thead th { background: #f5f6fc; color: #404460; }
+  [data-theme="light"] .timeline-sticky-header { background: #f5f6fc; border-color: #ced2e8; box-shadow: none; }
+  [data-theme="light"] .timeline-table td.eq-name-cell { background: #f5f6fc; color: #1a1d2e; border-right-color: #ced2e8; }
+
+  /* 모달 */
+  [data-theme="light"] .modal { background: #f5f6fc; }
+  [data-theme="light"] .modal input, [data-theme="light"] .modal select, [data-theme="light"] .modal textarea { background: #ffffff; color: #1a1d2e; border-color: #ced2e8; }
+
+  [data-theme="light"] {
+    --bg: #eef0f7;
+    --surface: #f5f6fc;
+    --surface2: #e4e6f2;
+    --border: #ced2e8;
+    --accent: #3a6aff;
+    --accent2: #6a4aff;
+    --green: #1aaa6a;
+    --yellow: #c49010;
+    --red: #e03030;
+    --gray: #7b7f98;
+    --text: #1a1d2e;
+    --text2: #404460;
+  }
 
   html, body {
     height: 100%;
@@ -535,6 +588,7 @@
   <div class="tab active" onclick="switchTab('dashboard')">📋 장비 현황</div>
   <div class="tab" onclick="switchTab('timeline')">📅 일정 뷰</div>
   <div class="tab" onclick="switchTab('history')">🔧 수리/이력</div>
+  <button id="theme-toggle" onclick="toggleTheme()" style="margin-left:auto;margin-right:8px;background:none;border:1px solid var(--border);color:var(--gray);border-radius:8px;padding:4px 10px;font-size:14px;cursor:pointer;flex-shrink:0" title="테마 전환">🌙</button>
 </div>
 
 <header>
@@ -2651,6 +2705,31 @@ document.addEventListener('click', closeDotMenus);
 renderDashboard();
 
 // ── sticky filter top 동적 계산 ──────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-toggle');
+  if (html.getAttribute('data-theme') === 'light') {
+    html.removeAttribute('data-theme');
+    btn.textContent = '🌙';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = '☀️';
+    localStorage.setItem('theme', 'light');
+  }
+}
+// 저장된 테마 복원
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+})();
+
 function updateStickyFilterTop() {
   const tabs = document.querySelector('.tabs');
   const header = document.querySelector('header');
