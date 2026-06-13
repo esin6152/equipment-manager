@@ -156,11 +156,22 @@
   }
   .timeline-nav button:hover { border-color: var(--accent); }
   .timeline-nav .month-label { font-size: 16px; font-weight: 700; min-width: 100px; text-align: center; }
-  .timeline-scroll { overflow-x: auto; }
+  .timeline-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 320px);
+  }
+  .timeline-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--surface);
+  }
+  @media (max-width: 767px) {
+    .timeline-scroll { max-height: calc(100vh - 280px); }
+  }
 
-  .timeline-header-scroll { overflow-x: hidden; margin-bottom: -1px; }
-  .timeline-header-scroll table { margin-bottom: 0; border-bottom: none; }
-  .timeline-header-scroll th { border-bottom: none !important; }
+
   .timeline-sticky-header {
     position: sticky;
     top: 93px;
@@ -600,7 +611,6 @@
             <span><span style="display:inline-block;width:12px;height:12px;background:rgba(255,92,92,0.2);border-radius:2px;margin-right:4px"></span>수리중</span>
             <span><span style="display:inline-block;width:12px;height:12px;background:rgba(46,204,138,0.08);border-radius:2px;margin-right:4px"></span>대기중</span>
           </div>
-          <div class="timeline-header-scroll" id="timeline-header-wrap" style="margin-top:6px"></div>
         </div>
         <div class="timeline-scroll" id="timeline-body-scroll" style="margin-top:0">
           <div id="timeline-table-wrap"><table class="timeline-table" id="timeline-table"></table></div>
@@ -1633,7 +1643,7 @@ function renderTimeline() {
     const isToday = d.toDateString() === today.toDateString();
     const dayNames = ['일','월','화','수','목','금','토'];
     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-    thead += `<th class="${isToday ? 'today-col' : ''}" style="${isWeekend ? 'opacity:0.5' : ''}">${d.getDate()}<br><span style="font-size:9px">${dayNames[d.getDay()]}</span></th>`;
+    thead += `<th class="${isToday ? 'today-col' : ''}" style="${isWeekend ? 'color:var(--gray)' : ''}">${d.getDate()}<br><span style="font-size:9px">${dayNames[d.getDay()]}</span></th>`;
   });
   thead += '</tr></thead>';
 
@@ -1737,20 +1747,8 @@ function renderTimeline() {
   });
   tbody += '</tbody>';
 
-  // 날짜 헤더 테이블 (sticky-header 안에 고정)
-  document.getElementById('timeline-header-wrap').innerHTML =
-    `<table class="timeline-table" style="table-layout:fixed">${thead}</table>`;
-  // 바디 테이블 (tbody만)
   document.getElementById('timeline-table-wrap').innerHTML =
-    `<table class="timeline-table" id="timeline-table" style="table-layout:fixed">${tbody}</table>`;
-  // 가로 스크롤 동기화
-  const bodyScroll = document.getElementById('timeline-body-scroll');
-  const headerWrap = document.getElementById('timeline-header-wrap');
-  if (bodyScroll && headerWrap) {
-    bodyScroll.removeEventListener('scroll', bodyScroll._syncScroll || (() => {}));
-    bodyScroll._syncScroll = () => { headerWrap.scrollLeft = bodyScroll.scrollLeft; };
-    bodyScroll.addEventListener('scroll', bodyScroll._syncScroll);
-  }
+    `<table class="timeline-table" id="timeline-table">${thead + tbody}</table>`;
 }
 
 // ── 이력 렌더 ─────────────────────────────────────
