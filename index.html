@@ -151,6 +151,55 @@
   .view { display: none; }
   .view.active { display: block; }
 
+  /* TABLE VIEW */
+  .equipment-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .equipment-table thead th {
+    background: var(--surface);
+    color: var(--gray);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .equipment-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .equipment-table tbody tr:hover { background: var(--surface2); }
+  .equipment-table tbody td {
+    padding: 10px 12px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .equipment-table tbody td.td-actions {
+    white-space: nowrap;
+    cursor: default;
+  }
+  .equipment-table tbody tr.in-use td:first-child { border-left: 3px solid var(--yellow); }
+  .equipment-table tbody tr.available td:first-child { border-left: 3px solid var(--green); }
+  .equipment-table tbody tr.maintenance td:first-child { border-left: 3px solid var(--red); }
+  .tbl-action-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  [data-theme="light"] .equipment-table thead th { background: var(--surface); color: var(--gray); }
+  [data-theme="light"] .equipment-table tbody tr:hover { background: var(--surface2); }
+
   /* CARD GRID */
   .card-grid {
     display: grid;
@@ -606,9 +655,15 @@
   <!-- 장비 현황 -->
   <div class="view active" id="view-dashboard">
     <div class="dashboard-sticky-filter">
-      <div class="section-title">
-        장비 현황
-        <button class="add-btn" onclick="openAddEquipment()">+ 장비 추가</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-title" style="margin-bottom:0">장비 현황</div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:3px">
+            <button id="toggle-card-view" onclick="setDashboardView('card')" style="padding:6px 14px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.2s">🃏 카드</button>
+            <button id="toggle-table-view" onclick="setDashboardView('table')" style="padding:6px 14px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--gray);transition:all 0.2s">📋 표</button>
+          </div>
+          <button class="add-btn" onclick="openAddEquipment()">+ 장비 추가</button>
+        </div>
       </div>
       <div class="cat-tabs" id="cat-tabs"></div>
       <div class="filter-bar">
@@ -632,7 +687,29 @@
         <span class="filter-count" id="filter-count"></span>
       </div>
     </div>
-    <div class="card-grid" id="equipment-grid"></div>
+    <div id="equipment-card-view">
+      <div class="card-grid" id="equipment-grid"></div>
+    </div>
+    <div id="equipment-table-view" style="display:none">
+      <div id="equipment-table-scroll" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - var(--table-scroll-top, 300px));border:1px solid var(--border);border-radius:10px;">
+        <table class="equipment-table" id="equipment-table">
+          <thead>
+            <tr>
+              <th style="min-width:150px;max-width:180px">품목 · 장비명</th>
+              <th style="width:120px">시리얼</th>
+              <th>상태</th>
+              <th>사용자</th>
+              <th>위치</th>
+              <th>반납일</th>
+              <th>목적</th>
+              <th>예약</th>
+              <th>액션</th>
+            </tr>
+          </thead>
+          <tbody id="equipment-tbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- 일정 뷰 -->
@@ -689,9 +766,15 @@
   <!-- 수리/이력 -->
   <div class="view" id="view-history">
     <div class="history-sticky-filter">
-      <div class="section-title">
-        점검 · 수리 이력
-        <button class="add-btn" onclick="openAddHistory()">+ 이력 추가</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-title" style="margin-bottom:0">점검 · 수리 이력</div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:3px">
+            <button id="hist-toggle-card" onclick="setHistoryView('card')" style="padding:6px 14px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.2s">🃏 카드</button>
+            <button id="hist-toggle-table" onclick="setHistoryView('table')" style="padding:6px 14px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--gray);transition:all 0.2s">📋 표</button>
+          </div>
+          <button class="add-btn" onclick="openAddHistory()">+ 이력 추가</button>
+        </div>
       </div>
       <div style="margin-bottom:6px">
         <div class="cat-tabs" id="hist-cat-filter-wrap" style="margin-bottom:4px"></div>
@@ -703,7 +786,24 @@
         </div>
       </div>
     </div>
-    <div id="history-list"></div>
+    <div id="history-card-view"><div id="history-list"></div></div>
+    <div id="history-table-view" style="display:none">
+      <div id="history-table-scroll" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 300px);border:1px solid var(--border);border-radius:10px;">
+        <table class="equipment-table" id="history-table">
+          <thead>
+            <tr>
+              <th>유형</th>
+              <th>날짜</th>
+              <th>품목 · 장비명</th>
+              <th>내용</th>
+              <th>담당자</th>
+              <th>액션</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -1353,12 +1453,12 @@ function renderDashboard(list) {
   const grid = document.getElementById('equipment-grid');
   if (!filtered.length) {
     grid.innerHTML = '<div class="empty-state">조건에 맞는 장비가 없습니다</div>';
+    const tbody = document.getElementById('equipment-tbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gray)">조건에 맞는 장비가 없습니다</td></tr>`;
     return;
   }
   grid.innerHTML = filtered.map(eq => {
     const statusLabel = { 'available': '대기중', 'in-use': '사용중', 'maintenance': '수리중' }[eq.status];
-
-    // 장착 정보 계산
     const mountRow = (() => {
       if (isModuleCategory(eq.category)) {
         if (eq.mountedOn) {
@@ -1432,8 +1532,8 @@ function renderDashboard(list) {
       ? `<button onclick="returnEquipment(${eq.id})" style="display:block;width:100%;margin-top:10px;padding:9px;font-size:13px;font-weight:600;background:rgba(255,92,92,0.12);color:#ff5c5c;border:1px solid rgba(255,92,92,0.3);border-radius:8px;cursor:pointer">↩ 반납</button>`
       : eq.status === 'maintenance'
       ? `<div style="display:flex;gap:6px;margin-top:10px">
-          <button onclick="completeInspection(${eq.id})" style="flex:1;padding:9px;font-size:12px;font-weight:600;background:rgba(255,124,92,0.12);color:#ff7c5c;border:1px solid rgba(255,124,92,0.3);border-radius:8px;cursor:pointer">✅ 대기중으로 변경</button>
-          <button onclick="discardEquipment(${eq.id})" style="flex:1;padding:9px;font-size:12px;font-weight:600;background:rgba(150,50,50,0.15);color:#e05555;border:1px solid rgba(200,50,50,0.35);border-radius:8px;cursor:pointer">🗑 폐기하기(해체)</button>
+          <button onclick="completeInspection(${eq.id})" style="flex:1;padding:9px;font-size:12px;font-weight:600;background:rgba(255,124,92,0.12);color:#ff7c5c;border:1px solid rgba(255,124,92,0.3);border-radius:8px;cursor:pointer">✅ 수리</button>
+          <button onclick="discardEquipment(${eq.id})" style="flex:1;padding:9px;font-size:12px;font-weight:600;background:rgba(150,50,50,0.15);color:#e05555;border:1px solid rgba(200,50,50,0.35);border-radius:8px;cursor:pointer">🗑 폐기(해체)</button>
         </div>`
       : '';
 
@@ -1454,10 +1554,71 @@ function renderDashboard(list) {
         <button class="reserve-btn" onclick="openReserve(${eq.id})">+ 예약 추가</button>
       </div>`;
   }).join('');
+
+  // ── 표 뷰 렌더링 ──────────────────────────────────
+  const tbody = document.getElementById('equipment-tbody');
+  if (tbody) {
+      tbody.innerHTML = filtered.map(eq => {
+      const statusLabel = { 'available': '대기중', 'in-use': '사용중', 'maintenance': '수리중' }[eq.status];
+      const eqRes = reservations.filter(r => r.eqId === eq.id).sort((a,b) => a.start.localeCompare(b.start));
+      const resCell = eqRes.length
+        ? `<span style="color:var(--accent);font-size:11px;font-weight:600">📅 ${eqRes.length}건</span>`
+        : `<span style="color:var(--gray);font-size:11px">-</span>`;
+
+      // 액션 버튼
+      let actionBtns = '';
+      if (eq.status === 'in-use') {
+        actionBtns = `<button class="tbl-action-btn" onclick="event.stopPropagation();returnEquipment(${eq.id})" style="background:rgba(255,92,92,0.12);color:#ff5c5c;border-color:rgba(255,92,92,0.3)">↩ 반납</button>`;
+      } else if (eq.status === 'maintenance') {
+        actionBtns = `
+          <button class="tbl-action-btn" onclick="event.stopPropagation();completeInspection(${eq.id})" style="background:rgba(255,124,92,0.12);color:#ff7c5c;border-color:rgba(255,124,92,0.3)">✅ 수리</button>
+          <button class="tbl-action-btn" style="margin-left:4px;background:rgba(150,50,50,0.15);color:#e05555;border-color:rgba(200,50,50,0.35)" onclick="event.stopPropagation();discardEquipment(${eq.id})">🗑 폐기</button>`;
+      }
+      actionBtns += `<button class="tbl-action-btn" onclick="event.stopPropagation();openReserve(${eq.id})" style="margin-left:4px;background:rgba(79,124,255,0.12);color:var(--accent);border-color:rgba(79,124,255,0.3)">+ 예약</button>`;
+
+      return `<tr class="${eq.status}" onclick="openDetail(${eq.id})">
+        <td style="min-width:150px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="color:${getCatColor(eq.category)};font-weight:700">${eq.category || '-'}</span> · ${eq.name}</td>
+        <td style="color:var(--text2);font-size:12px;width:120px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eq.serial}</td>
+        <td><span class="status-badge ${eq.status}">${statusLabel}</span></td>
+        <td>${eq.status === 'in-use' ? eq.user : '<span style="color:var(--gray)">-</span>'}</td>
+        <td style="font-size:12px;color:var(--text2)">${eq.location || '-'}</td>
+        <td style="font-size:12px">${eq.status === 'in-use' ? (eq.until || '무기한') : '<span style="color:var(--gray)">-</span>'}</td>
+        <td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eq.status === 'in-use' ? (eq.purpose || '-') : '<span style="color:var(--gray)">-</span>'}</td>
+        <td>${resCell}</td>
+        <td class="td-actions">${actionBtns}</td>
+      </tr>`;
+    }).join('');
+    requestAnimationFrame(calcTableTheadTop);
+  }
 }
 
 let availView = false; // 사용가능일 보기 모드
+let dashboardView = 'card'; // 'card' or 'table'
 
+function calcTableTheadTop() {
+  const dashFilter = document.querySelector('.dashboard-sticky-filter');
+  const scroll = document.getElementById('equipment-table-scroll');
+  if (!dashFilter || !scroll) return;
+  const filterTop = parseInt(dashFilter.style.top) || 93;
+  const filterH = dashFilter.offsetHeight;
+  // 래퍼 max-height = 뷰포트 높이 - (sticky filter 하단 위치) - 여백
+  const usedTop = filterTop + filterH;
+  scroll.style.maxHeight = (window.innerHeight - usedTop - 24) + 'px';
+}
+
+function setDashboardView(view) {
+  dashboardView = view;
+  document.getElementById('equipment-card-view').style.display = view === 'card' ? 'block' : 'none';
+  document.getElementById('equipment-table-view').style.display = view === 'table' ? 'block' : 'none';
+  document.getElementById('toggle-card-view').style.background = view === 'card' ? 'var(--accent)' : 'transparent';
+  document.getElementById('toggle-card-view').style.color = view === 'card' ? '#fff' : 'var(--gray)';
+  document.getElementById('toggle-table-view').style.background = view === 'table' ? 'var(--accent)' : 'transparent';
+  document.getElementById('toggle-table-view').style.color = view === 'table' ? '#fff' : 'var(--gray)';
+  renderDashboard();
+  if (view === 'table') {
+    requestAnimationFrame(calcTableTheadTop);
+  }
+}
 function toggleAvailView() {
   availView = !availView;
   const btn = document.getElementById('avail-toggle');
@@ -1866,6 +2027,29 @@ function setHistCatFilter(cat) {
   renderHistory();
 }
 
+let historyView = 'card';
+
+function setHistoryView(view) {
+  historyView = view;
+  document.getElementById('history-card-view').style.display = view === 'card' ? 'block' : 'none';
+  document.getElementById('history-table-view').style.display = view === 'table' ? 'block' : 'none';
+  document.getElementById('hist-toggle-card').style.background = view === 'card' ? 'var(--accent)' : 'transparent';
+  document.getElementById('hist-toggle-card').style.color = view === 'card' ? '#fff' : 'var(--gray)';
+  document.getElementById('hist-toggle-table').style.background = view === 'table' ? 'var(--accent)' : 'transparent';
+  document.getElementById('hist-toggle-table').style.color = view === 'table' ? '#fff' : 'var(--gray)';
+  renderHistory();
+  if (view === 'table') requestAnimationFrame(calcHistTableTop);
+}
+
+function calcHistTableTop() {
+  const histFilter = document.querySelector('.history-sticky-filter');
+  const scroll = document.getElementById('history-table-scroll');
+  if (!histFilter || !scroll) return;
+  const filterTop = parseInt(histFilter.style.top) || 93;
+  const filterH = histFilter.offsetHeight;
+  scroll.style.maxHeight = (window.innerHeight - filterTop - filterH - 24) + 'px';
+}
+
 function renderHistory() {
   renderHistCatFilter();
   const container = document.getElementById('history-list');
@@ -1918,6 +2102,35 @@ function renderHistory() {
       <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${h.content}</div>
     </div>`;
   }).join('');
+
+  // ── 표 뷰 렌더링 ──
+  const tbody = document.getElementById('history-tbody');
+  if (tbody) {
+    tbody.innerHTML = filtered.map(h => {
+      const eq = equipments.find(e => e.id === h.eqId);
+      const typeLabel = { check: '점검', repair: '수리', discard: '폐기(해체)' }[h.type];
+      const typeColor = { check: 'var(--green)', repair: 'var(--yellow)', discard: 'var(--red)' }[h.type];
+      const discardCat = !eq && h.eqName ? h.eqName.split(' · ')[0] : null;
+      const catColor = eq ? getCatColor(eq.category) : (discardCat ? getCatColor(discardCat) : 'var(--gray)');
+      const eqCell = eq
+        ? `<span style="color:${catColor};font-weight:700">${eq.category || ''}</span> · ${eq.name} · <span style="color:var(--text2);font-size:11px">${eq.serial}</span>`
+        : h.eqName
+          ? (() => { const parts = h.eqName.split(' · '); return `<span style="color:${catColor};font-weight:700">${parts[0]}</span>${parts.slice(1).map(p => ` · <span style="color:var(--text2)">${p}</span>`).join('')}`; })()
+          : `<span style="color:var(--gray)">알 수 없는 장비</span>`;
+      return `<tr>
+        <td><span style="font-size:11px;font-weight:700;color:${typeColor}">${typeLabel}</span></td>
+        <td style="font-size:12px;color:var(--text2);white-space:nowrap">${h.date}</td>
+        <td style="font-size:13px">${eqCell}</td>
+        <td style="font-size:12px;color:var(--text2);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.content}</td>
+        <td style="font-size:12px;color:var(--text2)">${h.person || '-'}</td>
+        <td class="td-actions">
+          <button class="tbl-action-btn" onclick="closeDotMenus();openEditHistory(${h.id})" style="background:rgba(79,124,255,0.12);color:var(--accent);border-color:rgba(79,124,255,0.3)">✎ 편집</button>
+          <button class="tbl-action-btn" style="margin-left:4px;background:rgba(255,92,92,0.12);color:var(--red);border-color:rgba(255,92,92,0.3)" onclick="deleteHistory(${h.id})">✕ 삭제</button>
+        </td>
+      </tr>`;
+    }).join('');
+    requestAnimationFrame(calcHistTableTop);
+  }
 }
 
 // ── 장비 추가/편집 모달 ───────────────────────────
@@ -2267,7 +2480,8 @@ function openAddHistory() {
   document.getElementById('hist-eq-toggle').textContent = '✏️ 직접 입력';
   ['hist-eq-cat','hist-eq-name','hist-eq-serial'].forEach(id => document.getElementById(id).value = '');
   const sel = document.getElementById('hist-eq');
-  sel.innerHTML = equipments.map(e => `<option value="${e.id}" style="color:${getCatColor(e.category)}">${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
+  sel.innerHTML = `<option value="">-- 장비 선택 --</option>` + equipments.map(e => `<option value="${e.id}" style="color:${getCatColor(e.category)}">${e.category ? e.category + ' · ' : ''}${e.name}${e.serial ? ' · ' + e.serial : ''}</option>`).join('');
+  sel.value = '';
   document.getElementById('hist-type').value = 'check';
   document.getElementById('hist-date').value = localDateStr(new Date());
   document.getElementById('hist-content').value = '';
@@ -2741,6 +2955,7 @@ function updateStickyFilterTop() {
   document.querySelectorAll('.dashboard-sticky-filter, .timeline-sticky-filter, .history-sticky-filter').forEach(el => {
     el.style.top = topVal;
   });
+  requestAnimationFrame(calcTableTheadTop);
   // 타임라인 내부 네비+범례도 sticky filter 바로 아래에 고정
   const timelineFilter = document.querySelector('.timeline-sticky-filter');
   const timelineFilterH = timelineFilter ? timelineFilter.getBoundingClientRect().height : 0;
