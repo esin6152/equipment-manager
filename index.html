@@ -2404,6 +2404,7 @@ function saveEquipment() {
 function openDetail(id) {
   const eq = equipments.find(e => e.id === id);
   const eqHistories = histories.filter(h => h.eqId === id).sort((a,b) => b.date.localeCompare(a.date));
+  const eqReservations = reservations.filter(r => r.eqId === id).sort((a,b) => a.start.localeCompare(b.start));
   const statusLabel = { 'available': '대기중', 'in-use': '사용중', 'maintenance': '수리중' }[eq.status];
 
   document.getElementById('detail-title').textContent = `${eq.name} (${eq.version})`;
@@ -2420,6 +2421,18 @@ function openDetail(id) {
       <div class="info-row"><span class="label">목적</span><span class="value">${eq.purpose}</span></div>` : ''}
       ${eq.memo ? `<div class="info-row"><span class="label">메모</span><span class="value">${eq.memo}</span></div>` : ''}
     </div>
+    ${eqReservations.length ? `
+    <div style="font-size:12px;color:var(--gray);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">예약 (${eqReservations.length}건)</div>
+    ${eqReservations.map(r => `
+      <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:6px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:600;color:var(--text)">${r.user}</span>
+          <span style="color:var(--gray);font-size:12px">${r.start} ~ ${r.end}</span>
+        </div>
+        ${r.purpose ? `<div style="color:var(--text2);margin-bottom:4px">${r.purpose}</div>` : ''}
+        ${r.location ? `<div style="color:var(--gray);font-size:11px">장소: ${r.location}</div>` : ''}
+      </div>`).join('')}
+    <div style="margin-bottom:16px"></div>` : ''}
     ${eqHistories.length ? `
     <div style="font-size:12px;color:var(--gray);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">최근 이력</div>
     ${eqHistories.slice(0,3).map(h => {
