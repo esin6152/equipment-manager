@@ -2723,6 +2723,25 @@ function directRent(resId) {
 }
 
 
+// ── 액션 전 최신 데이터 fetch ────────────────────────
+async function refreshData() {
+  if (!USE_SHEETS) return;
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const json = await res.json();
+    if (json.ok) {
+      equipments   = json.data.equipments.map(e => ({ ...e, id: Number(e.id), mountedOn: e.mountedOn === '' ? '' : Number(e.mountedOn), until: toDateStr(e.until) }));
+      reservations = json.data.reservations.map(r => ({ ...r, id: Number(r.id), eqId: Number(r.eqId), start: toDateStr(r.start), end: toDateStr(r.end) }));
+      histories    = json.data.histories.map(h => ({ ...h, id: Number(h.id), eqId: Number(h.eqId), date: toDateStr(h.date) }));
+      extraCategories = json.data.categories || [];
+      categoryMeta = json.data.categoryMeta || {};
+      nextEqId   = equipments.length   ? Math.max(...equipments.map(e=>e.id))   + 1 : 1;
+      nextResId  = reservations.length ? Math.max(...reservations.map(r=>r.id)) + 1 : 1;
+      nextHistId = histories.length    ? Math.max(...histories.map(h=>h.id))    + 1 : 1;
+    }
+  } catch(e) { console.warn('refreshData failed', e); }
+}
+
 function discardEquipment(eqId) {
   const eq = equipments.find(e => e.id === eqId);
   document.getElementById('confirm-title').textContent = '🗑 폐기(해체) 처리';
@@ -2737,11 +2756,11 @@ function discardEquipment(eqId) {
   const transferBtn = document.getElementById('confirm-transfer-btn');
 
   okBtn.textContent = '이력 없이 폐기';
-  okBtn.onclick = () => { closeModal('modal-confirm'); doDiscardEquipment(eqId, false); };
+  okBtn.onclick = async () => { closeModal('modal-confirm'); showSyncStatus('확인 중...'); await refreshData(); doDiscardEquipment(eqId, false); };
 
   transferBtn.style.display = 'block';
   transferBtn.textContent = '📋 이력 기록 후 폐기';
-  transferBtn.onclick = () => { closeModal('modal-confirm'); openDiscardHistory(eqId); };
+  transferBtn.onclick = async () => { closeModal('modal-confirm'); showSyncStatus('확인 중...'); await refreshData(); openDiscardHistory(eqId); };
 
   document.getElementById('modal-confirm').classList.add('open');
 }
@@ -2807,11 +2826,11 @@ function completeInspection(eqId) {
   const transferBtn = document.getElementById('confirm-transfer-btn');
 
   okBtn.textContent = '이력 없이 종료';
-  okBtn.onclick = () => { closeModal('modal-confirm'); doCompleteInspection(eqId, false); };
+  okBtn.onclick = async () => { closeModal('modal-confirm'); showSyncStatus('확인 중...'); await refreshData(); doCompleteInspection(eqId, false); };
 
   transferBtn.style.display = 'block';
   transferBtn.textContent = '📋 이력 기록 후 종료';
-  transferBtn.onclick = () => { closeModal('modal-confirm'); openInspectionHistory(eqId); };
+  transferBtn.onclick = async () => { closeModal('modal-confirm'); showSyncStatus('확인 중...'); await refreshData(); openInspectionHistory(eqId); };
 
   document.getElementById('modal-confirm').classList.add('open');
 }
@@ -2863,10 +2882,14 @@ function openInspectionHistory(eqId) {
 
 function returnEquipment(eqId) {
   const eq = equipments.find(e => e.id === eqId);
-  showConfirm('반납 처리', `${eq.user}님 반납 처리하시겠습니까?`, () => {
-    eq.status = 'available';
-    eq.user = ''; eq.until = ''; eq.purpose = '';
-    eq.location = '하드웨어센터';
+  showConfirm('반납 처리', `${eq.user}님 반납 처리하시겠습니까?`, async () => {
+    showSyncStatus('확인 중...');
+    await refreshData();
+    const eq2 = equipments.find(e => e.id === eqId);
+    if (!eq2) { showSyncStatus('⚠️ 장비를 찾을 수 없습니다', 3000); return; }
+    eq2.status = 'available';
+    eq2.user = ''; eq2.until = ''; eq2.purpose = '';
+    eq2.location = '하드웨어센터';
     saveAllEquipments();
     renderDashboard();
   });
@@ -2877,24 +2900,33 @@ function startReservation(resId) {
   const res = reservations.find(r => r.id === resId);
   if (!res) return;
   const eq = equipments.find(e => e.id === res.eqId);
-  showConfirm('사용 시작', `사용자: ${res.user}\n반납일: ${res.end}\n목적: ${res.purpose || '-'}`, () => {
-    eq.status = 'in-use';
-    eq.user = res.user;
-    eq.until = res.end;
-    eq.purpose = res.purpose;
-    eq.location = res.location || eq.location;
+  showConfirm('사용 시작', `사용자: ${res.user}\n반납일: ${res.end}\n목적: ${res.purpose || '-'}`, async () => {
+    showSyncStatus('확인 중...');
+    await refreshData();
+    const res2 = reservations.find(r => r.id === resId);
+    const eq2  = equipments.find(e => e.id === res.eqId);
+    if (!res2 || !eq2) { showSyncStatus('⚠️ 이미 처리된 예약입니다', 3000); renderDashboard(); return; }
+    eq2.status = 'in-use';
+    eq2.user = res2.user;
+    eq2.until = res2.end;
+    eq2.purpose = res2.purpose;
+    eq2.location = res2.location || eq2.location;
     reservations = reservations.filter(r => r.id !== resId);
+    deleteFromSheets('reservations', resId);
+    saveAllEquipments();
     renderDashboard();
   });
 }
 
 
 function deleteReservation(id) {
-  showConfirm('예약 삭제', '예약을 삭제하시겠습니까?', () => {
+  showConfirm('예약 삭제', '예약을 삭제하시겠습니까?', async () => {
+    showSyncStatus('확인 중...');
+    await refreshData();
     reservations = reservations.filter(r => r.id !== id);
     renderDashboard();
     renderCalendar();
-    deleteFromSheets('reservations', id); // 백그라운드로 시트 삭제
+    deleteFromSheets('reservations', id);
   });
 }
 
