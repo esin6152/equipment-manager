@@ -1197,7 +1197,7 @@ function showCellPopup(el) {
 
 function showConfirm(title, msg, onOk, transferLabel, onTransfer) {
   document.getElementById('confirm-title').textContent = title;
-  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-msg').innerHTML = msg;
   const okBtn = document.getElementById('confirm-ok-btn');
   const transferBtn = document.getElementById('confirm-transfer-btn');
 
@@ -2293,11 +2293,25 @@ function openAddEquipment() {
     document.getElementById('eq-mounted-on').value = '';
     document.getElementById('eq-module-on').value = '';
     document.getElementById('eq-category').onchange = () => refreshMountField(document.getElementById('eq-category').value, null);
+    document.getElementById('eq-status').onchange = updateUsageFieldsState;
+    updateUsageFieldsState();
     document.getElementById('modal-equipment').classList.add('open');
   } catch(e) {
     console.error('openAddEquipment error:', e);
     alert('오류: ' + e.message);
   }
+}
+
+function updateUsageFieldsState() {
+  const status = document.getElementById('eq-status').value;
+  const disabled = status === 'available';
+  ['eq-user', 'eq-until', 'eq-purpose'].forEach(id => {
+    const el = document.getElementById(id);
+    el.disabled = disabled;
+    el.style.opacity = disabled ? '0.35' : '1';
+    el.style.cursor = disabled ? 'not-allowed' : '';
+    if (disabled) el.value = '';
+  });
 }
 
 function openEditEquipment(id) {
@@ -2318,6 +2332,8 @@ function openEditEquipment(id) {
   refreshMountField(eq.category, eq.id);
   document.getElementById('eq-mounted-on').value = eq.mountedOn || '';
   document.getElementById('eq-category').onchange = () => refreshMountField(document.getElementById('eq-category').value, eq.id);
+  document.getElementById('eq-status').onchange = updateUsageFieldsState;
+  updateUsageFieldsState();
   closeModal('modal-detail');
   document.getElementById('modal-equipment').classList.add('open');
 }
@@ -2374,7 +2390,49 @@ function saveEquipment() {
 
   if (editingId) {
     const idx = equipments.findIndex(e => e.id === editingId);
-    equipments[idx] = { ...equipments[idx], ...data };
+    const prev = { ...equipments[idx] };
+
+    const statusChanged = prev.status !== data.status;
+    const useFieldChanged = prev.user !== data.user || prev.until !== data.until ||
+      prev.purpose !== data.purpose || prev.location !== data.location;
+
+    equipments[idx] = { ...prev, ...data };
+
+    if (statusChanged || useFieldChanged) {
+      const linked = getLinkedEquipment(equipments[idx]);
+      if (linked) {
+        const syncFields = { status: data.status, user: data.user, until: data.until, purpose: data.purpose, location: data.location };
+        const okBtn = document.getElementById('confirm-ok-btn');
+        const transferBtn = document.getElementById('confirm-transfer-btn');
+        document.getElementById('confirm-title').textContent = '📦 장착 세트 연동';
+        document.getElementById('confirm-msg').innerHTML =
+          `장착된 ${linkedLabel(linked)}이 있습니다.<br>함께 변경하시겠습니까?`;
+        okBtn.textContent = '이 장비만 변경';
+        okBtn.onclick = () => {
+          closeModal('modal-confirm');
+          saveToSheets('equipments', equipments[idx]);
+          renderDashboard();
+        };
+        transferBtn.style.display = 'block';
+        transferBtn.textContent = '🔗 세트 함께 변경';
+        transferBtn.onclick = () => {
+          closeModal('modal-confirm');
+          Object.assign(linked, syncFields);
+          saveToSheets('equipments', equipments[idx]);
+          saveToSheets('equipments', linked);
+          renderDashboard();
+        };
+        // 취소 버튼 클릭 시 원복
+        document.querySelector('#modal-confirm .btn-secondary').onclick = () => {
+          equipments[idx] = prev;
+          closeModal('modal-confirm');
+          renderDashboard();
+        };
+        closeModal('modal-equipment');
+        document.getElementById('modal-confirm').classList.add('open');
+        return;
+      }
+    }
   } else {
     const newId = nextEqId++;
     if (isTarget) {
@@ -2893,42 +2951,97 @@ function openInspectionHistory(eqId) {
   document.getElementById('modal-history').classList.add('open');
 }
 
-function returnEquipment(eqId) {
-  const eq = equipments.find(e => e.id === eqId);
-  showConfirm('반납 처리', `${eq.user}님 반납 처리하시겠습니까?`, async () => {
-    showSyncStatus('확인 중...');
-    await refreshData();
-    const eq2 = equipments.find(e => e.id === eqId);
-    if (!eq2) { showSyncStatus('⚠️ 장비를 찾을 수 없습니다', 3000); return; }
-    eq2.status = 'available';
-    eq2.user = ''; eq2.until = ''; eq2.purpose = '';
-    eq2.location = '하드웨어센터';
-    saveAllEquipments();
-    renderDashboard();
-  });
+// ── 장착 세트 연동 헬퍼 ──────────────────────────────
+function getLinkedEquipment(eq) {
+  if (isModuleCategory(eq.category)) {
+    return eq.mountedOn ? equipments.find(e => e.id === eq.mountedOn) || null : null;
+  } else {
+    return equipments.find(e => isModuleCategory(e.category) && e.mountedOn === eq.id) || null;
+  }
 }
 
+function linkedLabel(eq) {
+  const type = isModuleCategory(eq.category) ? '모듈' : '장비';
+  const color = getCatColor(eq.category);
+  const cat = eq.category ? `<span style="color:${color};font-weight:700">${eq.category}</span> · ` : '';
+  return `${type} · ${cat}${eq.serial || eq.name}`;
+}
+
+function returnEquipment(eqId) {
+  const eq = equipments.find(e => e.id === eqId);
+  const linked = getLinkedEquipment(eq);
+
+  const doReturn = async (withLinked) => {
+    const returnFields = { status: 'available', user: '', until: '', purpose: '', location: '하드웨어센터' };
+    // 로컬 우선 처리
+    Object.assign(eq, returnFields);
+    if (withLinked && linked) Object.assign(linked, returnFields);
+    renderDashboard();
+    // 백그라운드 서버 동기화 - refreshData 후 배열이 교체되므로 다시 찾아서 적용
+    await refreshData();
+    const eq2 = equipments.find(e => e.id === eqId);
+    if (eq2) Object.assign(eq2, returnFields);
+    if (withLinked && linked) {
+      const l2 = equipments.find(e => e.id === linked.id);
+      if (l2) Object.assign(l2, returnFields);
+    }
+    saveAllEquipments();
+    renderDashboard();
+  };
+
+  if (linked) {
+    showConfirm(
+      '반납 처리',
+      `${eq.user}님 반납 처리하시겠습니까?<br><br>📦 장착된 ${linkedLabel(linked)}이 있습니다.`,
+      () => doReturn(false),
+      '🔗 세트 함께 반납',
+      () => doReturn(true)
+    );
+    document.getElementById('confirm-ok-btn').textContent = '이 장비만 반납';
+  } else {
+    showConfirm('반납 처리', `${eq.user}님 반납 처리하시겠습니까?`, () => doReturn(false));
+  }
+}
 
 function startReservation(resId) {
   const res = reservations.find(r => r.id === resId);
   if (!res) return;
   const eq = equipments.find(e => e.id === res.eqId);
-  showConfirm('사용 시작', `사용자: ${res.user}\n반납일: ${res.end}\n목적: ${res.purpose || '-'}`, async () => {
-    showSyncStatus('확인 중...');
+  const linked = getLinkedEquipment(eq);
+
+  const doStart = async (withLinked) => {
+    const useFields = { status: 'in-use', user: res.user, until: res.end, purpose: res.purpose, location: res.location || eq.location };
+    // 로컬 우선 처리
+    Object.assign(eq, useFields);
+    if (withLinked && linked) Object.assign(linked, useFields);
+    reservations = reservations.filter(r => r.id !== resId);
+    renderDashboard();
+    // 백그라운드 서버 동기화
     await refreshData();
-    const res2 = reservations.find(r => r.id === resId);
-    const eq2  = equipments.find(e => e.id === res.eqId);
-    if (!res2 || !eq2) { showSyncStatus('⚠️ 이미 처리된 예약입니다', 3000); renderDashboard(); return; }
-    eq2.status = 'in-use';
-    eq2.user = res2.user;
-    eq2.until = res2.end;
-    eq2.purpose = res2.purpose;
-    eq2.location = res2.location || eq2.location;
+    const eq2 = equipments.find(e => e.id === res.eqId);
+    if (eq2) Object.assign(eq2, useFields);
+    if (withLinked && linked) {
+      const l2 = equipments.find(e => e.id === linked.id);
+      if (l2) Object.assign(l2, useFields);
+    }
     reservations = reservations.filter(r => r.id !== resId);
     deleteFromSheets('reservations', resId);
     saveAllEquipments();
     renderDashboard();
-  });
+  };
+
+  if (linked) {
+    showConfirm(
+      '사용 시작',
+      `사용자: ${res.user}<br>반납일: ${res.end}<br>목적: ${res.purpose || '-'}<br><br>📦 장착된 ${linkedLabel(linked)}이 있습니다.`,
+      () => doStart(false),
+      '🔗 세트 함께 사용 시작',
+      () => doStart(true)
+    );
+    document.getElementById('confirm-ok-btn').textContent = '이 장비만 시작';
+  } else {
+    showConfirm('사용 시작', `사용자: ${res.user}<br>반납일: ${res.end}<br>목적: ${res.purpose || '-'}`, () => doStart(false));
+  }
 }
 
 
