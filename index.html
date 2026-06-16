@@ -1057,6 +1057,13 @@ function localDateStr(d) {
     String(d.getDate()).padStart(2, '0');
 }
 
+// mountedOn 안전 파싱: 숫자면 Number, 없으면 '' 반환
+function parseMountedOn(val) {
+  if (val === '' || val === null || val === undefined || val === false) return '';
+  const n = Number(val);
+  return isNaN(n) || n === 0 ? '' : n;
+}
+
 async function loadFromSheets(isAutoRefresh = false) {
   if (!USE_SHEETS) {
     document.getElementById('loading-overlay').style.display = 'none';
@@ -1067,7 +1074,7 @@ async function loadFromSheets(isAutoRefresh = false) {
     const res = await fetch(SCRIPT_URL);
     const json = await res.json();
     if (json.ok) {
-      equipments   = json.data.equipments.map(e => ({ ...e, id: Number(e.id), mountedOn: e.mountedOn === '' ? '' : Number(e.mountedOn), until: toDateStr(e.until) }));
+      equipments   = json.data.equipments.map(e => ({ ...e, id: Number(e.id), mountedOn: parseMountedOn(e.mountedOn), until: toDateStr(e.until) }));
       reservations = json.data.reservations.map(r => ({ ...r, id: Number(r.id), eqId: Number(r.eqId), start: toDateStr(r.start), end: toDateStr(r.end) }));
       histories    = json.data.histories.map(h => ({ ...h, id: Number(h.id), eqId: Number(h.eqId), date: toDateStr(h.date) }));
       extraCategories = json.data.categories || [];
@@ -2350,8 +2357,8 @@ function saveEquipment() {
     until: document.getElementById('eq-until').value,
     purpose: document.getElementById('eq-purpose').value.trim(),
     memo: document.getElementById('eq-memo').value.trim(),
-    mountedOn: document.getElementById('eq-category').value === 'SIRIUS V2'
-      ? (document.getElementById('eq-mounted-on').value ? parseInt(document.getElementById('eq-mounted-on').value) : '') : '',
+    mountedOn: parseMountedOn(document.getElementById('eq-category').value === 'SIRIUS V2'
+      ? document.getElementById('eq-mounted-on').value : ''),
   };
   if (!data.name) { alert('장비명을 입력해주세요'); return; }
   if (!data.category) { alert('품목을 입력해주세요'); return; }
@@ -2362,8 +2369,7 @@ function saveEquipment() {
 
   if (isModule) {
     // 모듈 장비: mountedOn을 드롭다운에서 가져옴
-    data.mountedOn = document.getElementById('eq-mounted-on').value
-      ? parseInt(document.getElementById('eq-mounted-on').value) : '';
+    data.mountedOn = parseMountedOn(document.getElementById('eq-mounted-on').value);
   }
 
   if (isTarget) {
@@ -2801,7 +2807,7 @@ async function refreshData() {
     const res = await fetch(SCRIPT_URL);
     const json = await res.json();
     if (json.ok) {
-      equipments   = json.data.equipments.map(e => ({ ...e, id: Number(e.id), mountedOn: e.mountedOn === '' ? '' : Number(e.mountedOn), until: toDateStr(e.until) }));
+      equipments   = json.data.equipments.map(e => ({ ...e, id: Number(e.id), mountedOn: parseMountedOn(e.mountedOn), until: toDateStr(e.until) }));
       reservations = json.data.reservations.map(r => ({ ...r, id: Number(r.id), eqId: Number(r.eqId), start: toDateStr(r.start), end: toDateStr(r.end) }));
       histories    = json.data.histories.map(h => ({ ...h, id: Number(h.id), eqId: Number(h.eqId), date: toDateStr(h.date) }));
       extraCategories = json.data.categories || [];
